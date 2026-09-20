@@ -27,6 +27,7 @@ For example:
 
 ```bash
 inat add "Acme" "Software Engineering Intern" https://example.com/jobs/123 \
+  --date-applied 09/20/2026 \
   --start-at 2027-06-01 \
   --company-size-type "startup / 50-100" \
   --notes "Distributed systems team"
@@ -38,7 +39,7 @@ filled automatically when an application is added:
 - application season: `summer`
 - application year: next calendar year
 - start at: `summer` of next calendar year when omitted; `N/A` is also accepted
-- date applied: today's local date
+- date applied: today's local date, or an explicit `--date-applied MM/DD/YYYY`
 - status-update time: current UTC time
 
 Every application receives a stable, uppercase, eight-character ID. Use the ID

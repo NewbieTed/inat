@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+from datetime import date, datetime
 from pathlib import Path
 from typing import Annotated
 
@@ -32,6 +34,7 @@ statuses_app = typer.Typer(help="List and customize application statuses.")
 app.add_typer(vectors_app, name="vectors")
 app.add_typer(statuses_app, name="statuses")
 console = Console()
+APPLIED_DATE_PATTERN = re.compile(r"^\d{2}/\d{2}/\d{4}$")
 
 
 def _database(path: Path | None) -> Database:
@@ -50,6 +53,16 @@ def _search_service(path: Path | None, mode: SearchMode) -> ApplicationService:
     service = ApplicationService(database, semantic_search=semantic)
     service.initialize()
     return service
+
+
+def _parse_applied_date(value: str) -> date:
+    cleaned = value.strip()
+    if not APPLIED_DATE_PATTERN.fullmatch(cleaned):
+        raise typer.BadParameter("Date applied must use MM/DD/YYYY format.")
+    try:
+        return datetime.strptime(cleaned, "%m/%d/%Y").date()
+    except ValueError:
+        raise typer.BadParameter("Date applied must be a valid MM/DD/YYYY date.") from None
 
 
 def _show_applications(applications: list[Application]) -> None:
@@ -163,6 +176,10 @@ def add_application(
         ),
     ] = None,
     status: Annotated[str, typer.Option(help="Initial built-in or custom status.")] = "applied",
+    date_applied: Annotated[
+        str | None,
+        typer.Option("--date-applied", help="Applied date in MM/DD/YYYY format."),
+    ] = None,
     company_size_type: Annotated[
         str | None,
         typer.Option(
@@ -186,6 +203,9 @@ def add_application(
                 notes=notes,
             ),
             status=status,
+            date_applied=(
+                _parse_applied_date(date_applied) if date_applied is not None else None
+            ),
         )
     except ValueError as exc:
         console.print(f"[red]{exc}[/red]")

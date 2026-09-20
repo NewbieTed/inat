@@ -46,6 +46,20 @@ def test_add_autofills_dates_and_next_summer(tmp_path):
     assert item.status_updated_at == now
 
 
+def test_add_accepts_an_explicit_applied_date_without_changing_default_season(tmp_path):
+    tracker = service(tmp_path)
+
+    item = tracker.add(
+        draft(),
+        date_applied=date(2025, 12, 31),
+        today=date(2026, 9, 20),
+    )
+
+    assert item.date_applied == date(2025, 12, 31)
+    assert item.application_year == 2027
+    assert item.application_season is Season.SUMMER
+
+
 def test_every_application_id_has_same_length_and_is_unique(tmp_path):
     tracker = service(tmp_path)
 

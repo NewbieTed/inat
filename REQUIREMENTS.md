@@ -10,7 +10,7 @@ Each application stores:
 | Company | Required |
 | Position | Required |
 | Start At | ISO date or `N/A`; defaults to `summer` of next calendar year |
-| Date Applied | Local current date; never entered manually |
+| Date Applied | Defaults to the local current date; `add` accepts an MM/DD/YYYY override |
 | Status | Required; defaults to `applied`; accepts registered custom values |
 | Status Updated At | UTC timestamp maintained automatically |
 | Application Season | Defaults to `summer` and is not entered manually |

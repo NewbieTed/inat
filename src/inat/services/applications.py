@@ -130,6 +130,7 @@ class ApplicationService:
         draft: ApplicationDraft,
         *,
         status: str | ApplicationStatus = ApplicationStatus.APPLIED,
+        date_applied: date | None = None,
         today: date | None = None,
         now: datetime | None = None,
     ) -> Application:
@@ -139,9 +140,10 @@ class ApplicationService:
         url = self._validate_url(
             self._clean_required(draft.career_page_url, "Career/application page URL")
         )
-        applied_on = today or date.today()
+        current_date = today or date.today()
+        applied_on = date_applied or current_date
         changed_at = now or datetime.now(timezone.utc)
-        year, season = default_application_season(applied_on)
+        year, season = default_application_season(current_date)
         start_at = self._start_at(draft.start_at, year=year, season=season)
         company_size_type = self._clean_optional(draft.company_size_type)
         notes = self._clean_optional(draft.notes)

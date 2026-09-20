@@ -105,3 +105,27 @@ def test_add_rejects_non_iso_date(tmp_path):
 
     assert result.exit_code != 0
     assert "YYYY-MM-DD" in result.output
+
+
+def test_add_accepts_date_applied_in_mm_dd_yyyy_format(tmp_path):
+    database = tmp_path / "inat.db"
+    args = add_args(database)
+    args.extend(["--date-applied", "08/31/2026"])
+
+    added = runner.invoke(app, args)
+    application_id = re.search(r"Added ([A-Z0-9]{8})", added.output).group(1)
+    shown = runner.invoke(app, ["show", application_id, "--db", str(database)])
+
+    assert added.exit_code == 0
+    assert shown.exit_code == 0
+    assert "2026-08-31" in shown.output
+
+
+def test_add_rejects_other_date_applied_formats(tmp_path):
+    args = add_args(tmp_path / "inat.db")
+    args.extend(["--date-applied", "2026-08-31"])
+
+    result = runner.invoke(app, args)
+
+    assert result.exit_code != 0
+    assert "MM/DD/YYYY" in result.output
