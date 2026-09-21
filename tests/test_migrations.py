@@ -1,3 +1,7 @@
+import sqlite3
+
+import pytest
+
 from inat.infrastructure import Database
 from inat.infrastructure.sql_loader import read_sql
 
@@ -40,4 +44,24 @@ def test_existing_database_drops_deadline_without_losing_application(tmp_path):
     assert "platform" not in columns
     assert tuple(row) == ("ABCDEFGH", "Acme", "OA")
     assert statuses >= {"applied", "OA", "interview", "offer", "rejected", "withdrawn"}
-    assert version == 4
+    assert version == 5
+
+    with database.connect() as connection:
+        with pytest.raises(sqlite3.IntegrityError, match="duplicate application"):
+            connection.execute(
+                """
+                INSERT INTO applications (
+                    public_id, company, position, start_at, date_applied, status,
+                    status_updated_at, application_season, application_year,
+                    company_size_type, career_page_url, notes, search_text,
+                    created_at, updated_at
+                )
+                SELECT
+                    'IJKLMNPQ', company, position, start_at, date_applied, status,
+                    status_updated_at, application_season, application_year,
+                    company_size_type, career_page_url, notes, search_text,
+                    created_at, updated_at
+                FROM applications
+                WHERE public_id = 'ABCDEFGH'
+                """
+            )

@@ -32,6 +32,37 @@ class ApplicationRepository:
         ).fetchone()
         return row is not None
 
+    def duplicate(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        company: str,
+        position: str,
+        career_page_url: str,
+        application_year: int,
+        application_season: Season,
+    ) -> Application | None:
+        row = connection.execute(
+            """
+            SELECT *
+            FROM applications
+            WHERE company = ?
+              AND position = ?
+              AND career_page_url = ?
+              AND application_year = ?
+              AND application_season = ?
+            LIMIT 1
+            """,
+            (
+                company,
+                position,
+                career_page_url,
+                application_year,
+                application_season.value,
+            ),
+        ).fetchone()
+        return self._application(row) if row is not None else None
+
     def create(
         self,
         connection: sqlite3.Connection,

@@ -155,6 +155,19 @@ class ApplicationService:
         )
         with self.database.transaction() as connection:
             canonical_status = self._resolve_status(connection, status)
+            duplicate = self.repository.duplicate(
+                connection,
+                company=company,
+                position=position,
+                career_page_url=url,
+                application_year=year,
+                application_season=season,
+            )
+            if duplicate is not None:
+                raise ValueError(
+                    "Duplicate application: the same company, position, URL, and "
+                    f"application season already exist as {duplicate.id}."
+                )
             for _ in range(20):
                 public_id = self._new_id()
                 if not self.repository.public_id_exists(connection, public_id):

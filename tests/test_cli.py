@@ -129,3 +129,16 @@ def test_add_rejects_other_date_applied_formats(tmp_path):
 
     assert result.exit_code != 0
     assert "MM/DD/YYYY" in result.output
+
+
+def test_add_rejects_exact_duplicate_and_prints_existing_id(tmp_path):
+    database = tmp_path / "inat.db"
+    first = runner.invoke(app, add_args(database))
+    application_id = re.search(r"Added ([A-Z0-9]{8})", first.output).group(1)
+
+    duplicate = runner.invoke(app, add_args(database))
+
+    assert first.exit_code == 0
+    assert duplicate.exit_code == 1
+    assert "Duplicate application" in duplicate.output
+    assert application_id in duplicate.output

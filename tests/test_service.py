@@ -71,6 +71,47 @@ def test_every_application_id_has_same_length_and_is_unique(tmp_path):
     assert {len(identifier) for identifier in identifiers} == {ID_LENGTH}
 
 
+def test_add_rejects_exact_duplicate_and_reports_existing_id(tmp_path):
+    tracker = service(tmp_path)
+    existing = tracker.add(draft(), today=date(2026, 9, 20))
+
+    with pytest.raises(ValueError, match=existing.id):
+        tracker.add(
+            draft(start_at="N/A", notes="Different non-key details"),
+            status="offer",
+            date_applied=date(2026, 1, 1),
+            today=date(2026, 9, 20),
+        )
+
+    assert len(tracker.list()) == 1
+
+
+@pytest.mark.parametrize(
+    "changed",
+    [
+        {"company": "Acme Labs"},
+        {"position": "Research Intern"},
+        {"career_page_url": "https://example.com/jobs/456"},
+    ],
+)
+def test_add_allows_a_difference_in_any_duplicate_key_field(tmp_path, changed):
+    tracker = service(tmp_path)
+    tracker.add(draft(), today=date(2026, 9, 20))
+
+    tracker.add(draft(**changed), today=date(2026, 9, 20))
+
+    assert len(tracker.list()) == 2
+
+
+def test_same_details_are_allowed_in_a_different_application_season(tmp_path):
+    tracker = service(tmp_path)
+    tracker.add(draft(), today=date(2026, 9, 20))
+
+    tracker.add(draft(), today=date(2027, 1, 1))
+
+    assert {item.application_year for item in tracker.list()} == {2027, 2028}
+
+
 def test_optional_company_size_and_notes_are_blank(tmp_path):
     tracker = service(tmp_path)
 

@@ -52,6 +52,10 @@ inat show 7N8QK3RX
 inat history 7N8QK3RX
 ```
 
+`add` rejects an exact duplicate when company, position, URL, application
+season, and application year match an existing record. The error reports the
+existing application ID so it can be updated instead.
+
 Built-in statuses are `applied`, `OA`, `interview`, `offer`, `rejected`, and
 `withdrawn`. Status changes are timestamped and kept in an audit-history table.
 Custom statuses can be managed locally and then supplied to `add`, `update`,

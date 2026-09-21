@@ -8,7 +8,7 @@ from typing import Iterator
 from .sql_loader import read_sql
 
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 
 class Database:
@@ -64,6 +64,11 @@ class Database:
             if version == 3:
                 connection.executescript(
                     read_sql("migrations", "004_custom_statuses.sql")
+                )
+                version = 4
+            if version == 4:
+                connection.executescript(
+                    read_sql("migrations", "005_duplicate_guard.sql")
                 )
 
     def initialize_vectors(self) -> None:

@@ -21,6 +21,11 @@ Each application stores:
 
 Status transitions are retained in a separate audit table.
 
+Applications must be unique by the exact company, position, career/application
+page URL, application season, and application year. `add` rejects a duplicate
+and reports the existing application ID. Other fields do not distinguish an
+otherwise identical application.
+
 ## Commands
 
 - `add COMPANY POSITION URL` requires exactly three positional values and saves
