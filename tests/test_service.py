@@ -107,7 +107,7 @@ def test_same_details_are_allowed_in_a_different_application_season(tmp_path):
     tracker = service(tmp_path)
     tracker.add(draft(), today=date(2026, 9, 20))
 
-    tracker.add(draft(), today=date(2027, 1, 1))
+    tracker.add(draft(), today=date(2027, 6, 1))
 
     assert {item.application_year for item in tracker.list()} == {2027, 2028}
 
@@ -246,7 +246,7 @@ def test_status_and_season_filters_work_without_query_or_vectors(tmp_path):
     tracker.add(
         draft(position="Research Intern"),
         status="interview",
-        today=date(2027, 1, 1),
+        today=date(2027, 6, 1),
     )
 
     by_status = tracker.search(None, status="interview", all_years=True)
@@ -261,7 +261,7 @@ def test_status_and_season_filters_work_without_query_or_vectors(tmp_path):
 def test_search_without_query_defaults_to_current_application_year(tmp_path):
     tracker = service(tmp_path)
     tracker.add(draft(), today=date(2026, 9, 20))
-    tracker.add(draft(position="Future Intern"), today=date(2027, 1, 1))
+    tracker.add(draft(position="Future Intern"), today=date(2027, 6, 1))
 
     matches = tracker.search(None, today=date(2026, 9, 20))
 
@@ -273,7 +273,7 @@ def test_search_without_query_defaults_to_current_application_year(tmp_path):
 def test_search_year_all_disables_default_year_filter(tmp_path):
     tracker = service(tmp_path)
     tracker.add(draft(), today=date(2026, 9, 20))
-    tracker.add(draft(position="Future Intern"), today=date(2027, 1, 1))
+    tracker.add(draft(position="Future Intern"), today=date(2027, 6, 1))
 
     matches = tracker.search(None, all_years=True)
 

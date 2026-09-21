@@ -12,12 +12,12 @@ ID_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
 
 
 def default_application_season(today: date | None = None) -> tuple[int, Season]:
-    """Internship applications default to next year's summer season."""
+    """Return the upcoming summer, using June 1 as the year cutoff."""
     reference = today or date.today()
-    return reference.year + 1, Season.SUMMER
+    year = reference.year + (reference >= date(reference.year, 6, 1))
+    return year, Season.SUMMER
 
 
 def normalize_search_text(value: str) -> str:
     normalized = unicodedata.normalize("NFKC", value).casefold()
     return " ".join(re.sub(r"[^\w]+", " ", normalized).split())
-

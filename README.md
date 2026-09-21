@@ -37,8 +37,8 @@ inat add "Acme" "Software Engineering Intern" https://example.com/jobs/123 \
 filled automatically when an application is added:
 
 - application season: `summer`
-- application year: next calendar year
-- start at: `summer` of next calendar year when omitted; `N/A` is also accepted
+- application year: the upcoming summer's year
+- start at: the upcoming `summer YYYY` when omitted; `N/A` is also accepted
 - date applied: today's local date, or an explicit `--date-applied MM/DD/YYYY`
 - status-update time: current UTC time
 
@@ -95,9 +95,13 @@ Position. Status, season, and year are exact filters and can be used without a
 text query; filtered-only searches never access vectors. Results are paginated
 without truncation using `--page` and `--page-size` (20 rows by default). Before
 matching, `inat` counts the filtered scope; scopes above 1,000 applications stop
-with the count and ask for narrower filters. Search defaults to the current
-application year (next summer's year); use `--year YYYY` to select another year
-or `--year all` to search across every year.
+with the count and ask for narrower filters. Search defaults to the upcoming
+summer's application year; use `--year YYYY` to select another year or
+`--year all` to search across every year.
+
+The upcoming-summer cutoff is June 1. Applications submitted from January 1
+through May 31 default to summer of the current year. Applications submitted on
+or after June 1 default to summer of the following year.
 
 Vector support is optional because its ML dependencies are large:
 

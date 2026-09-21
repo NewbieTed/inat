@@ -9,12 +9,12 @@ Each application stores:
 | ID | Unique, stable, uppercase, exactly 8 characters |
 | Company | Required |
 | Position | Required |
-| Start At | ISO date or `N/A`; defaults to `summer` of next calendar year |
+| Start At | ISO date or `N/A`; defaults to the upcoming `summer YYYY` |
 | Date Applied | Defaults to the local current date; `add` accepts an MM/DD/YYYY override |
 | Status | Required; defaults to `applied`; accepts registered custom values |
 | Status Updated At | UTC timestamp maintained automatically |
 | Application Season | Defaults to `summer` and is not entered manually |
-| Application Year | Defaults to next calendar year and is not entered manually |
+| Application Year | Upcoming summer year: current year before June 1, next year on/after June 1 |
 | Company Size/Type | Optional |
 | Career/Application Page URL | Required HTTP(S) URL |
 | Notes | Optional |
