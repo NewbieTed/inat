@@ -78,7 +78,7 @@ class ApplicationService:
         value: date | str | None, *, year: int, season: Season
     ) -> str:
         if value is None or (isinstance(value, str) and not value.strip()):
-            return f"{season.value} {year}"
+            return f"{season.value.capitalize()} {year}"
         if isinstance(value, date):
             return value.isoformat()
         cleaned = value.strip()

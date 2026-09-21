@@ -32,7 +32,7 @@ def test_add_list_update_and_show(tmp_path):
     listed = runner.invoke(app, ["list", "--db", str(database)])
     assert listed.exit_code == 0
     assert application_id in listed.output
-    assert "summer" in listed.output
+    assert "Summer" in listed.output
 
     updated = runner.invoke(
         app,
@@ -141,6 +141,9 @@ def test_search_year_all_disables_current_year_default(tmp_path):
 
     assert "No matching applications found" in default_year.output
     assert application_id in all_years.output
+    assert "Season" in all_years.output
+    assert "Summer" in all_years.output
+    assert "2028" in all_years.output
     assert application_id in explicit_year.output
 
 

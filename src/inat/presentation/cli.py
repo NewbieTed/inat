@@ -81,6 +81,19 @@ def _parse_search_year(value: str | None) -> tuple[int | None, bool]:
     return year, False
 
 
+def _season_label(season: Season, year: int) -> str:
+    return f"{season.value.capitalize()} {year}"
+
+
+def _display_start_at(value: str) -> str:
+    parts = value.split(maxsplit=1)
+    if len(parts) == 2 and parts[0].casefold() in {
+        item.value for item in Season
+    }:
+        return f"{parts[0].capitalize()} {parts[1]}"
+    return value
+
+
 def _show_applications(applications: list[Application]) -> None:
     if not applications:
         console.print("No applications found.")
@@ -91,8 +104,8 @@ def _show_applications(applications: list[Application]) -> None:
             item.id,
             item.company,
             item.position,
-            item.start_at,
-            f"{item.application_season.value} {item.application_year}",
+            _display_start_at(item.start_at),
+            _season_label(item.application_season, item.application_year),
             item.status,
             item.date_applied.isoformat(),
         )
@@ -100,7 +113,7 @@ def _show_applications(applications: list[Application]) -> None:
 
 
 def _show_matches(
-    matches: list[SearchMatch], *, page: int, page_size: int
+    matches: list[SearchMatch], *, page: int, page_size: int, show_season: bool = False
 ) -> None:
     if not matches:
         console.print("No matching applications found.")
@@ -112,24 +125,35 @@ def _show_matches(
         )
     first = (page - 1) * page_size
     visible = matches[first : first + page_size]
+    columns = ["ID", "Company", "Position"]
+    if show_season:
+        columns.append("Season")
+    columns.extend(["Status", "Match", "Score"])
     table = Table(
-        "ID",
-        "Company",
-        "Position",
-        "Status",
-        "Match",
-        "Score",
+        *columns,
         caption=f"Page {page}/{total_pages} · {len(matches)} matches",
     )
     for match in visible:
-        table.add_row(
+        row = [
             match.application.id,
             match.application.company,
             match.application.position,
-            match.application.status,
-            match.reason,
-            f"{match.score:.1f}",
+        ]
+        if show_season:
+            row.append(
+                _season_label(
+                    match.application.application_season,
+                    match.application.application_year,
+                )
+            )
+        row.extend(
+            [
+                match.application.status,
+                match.reason,
+                f"{match.score:.1f}",
+            ]
         )
+        table.add_row(*row)
     console.print(table)
 
 
@@ -245,7 +269,7 @@ def add_application(
         raise typer.Exit(1) from None
     console.print(
         f"Added [bold]{result.id}[/bold]: {result.company} — {result.position} "
-        f"({result.application_season.value} {result.application_year})."
+        f"({_season_label(result.application_season, result.application_year)})."
     )
 
 
@@ -331,11 +355,11 @@ def show_application(
         ("ID", item.id),
         ("Company", item.company),
         ("Position", item.position),
-        ("Start at", item.start_at),
+        ("Start at", _display_start_at(item.start_at)),
         ("Date applied", item.date_applied.isoformat()),
         ("Status", item.status),
         ("Status updated", item.status_updated_at.isoformat()),
-        ("Application season", item.application_season.value),
+        ("Application season", item.application_season.value.capitalize()),
         ("Application year", str(item.application_year)),
         ("Company size/type", item.company_size_type or ""),
         ("Career/application page", item.career_page_url),
@@ -422,7 +446,12 @@ def search_applications(
             season=season,
             all_years=all_years,
         )
-        _show_matches(matches, page=page, page_size=page_size)
+        _show_matches(
+            matches,
+            page=page,
+            page_size=page_size,
+            show_season=all_years,
+        )
     except ValueError as exc:
         console.print(f"[red]{exc}[/red]")
         raise typer.Exit(1) from None

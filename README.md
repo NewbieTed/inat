@@ -97,7 +97,8 @@ without truncation using `--page` and `--page-size` (20 rows by default). Before
 matching, `inat` counts the filtered scope; scopes above 1,000 applications stop
 with the count and ask for narrower filters. Search defaults to the upcoming
 summer's application year; use `--year YYYY` to select another year or
-`--year all` to search across every year.
+`--year all` to search across every year. Results for `--year all` include an
+application-season column such as `Summer 2027`.
 
 The upcoming-summer cutoff is June 1. Applications submitted from January 1
 through May 31 default to summer of the current year. Applications submitted on

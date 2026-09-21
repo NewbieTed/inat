@@ -149,7 +149,7 @@ def test_start_at_defaults_to_next_summer_and_accepts_na(tmp_path):
     defaulted = tracker.add(draft(start_at=None), today=date(2026, 9, 19))
     unavailable = tracker.add(draft(position="Research Intern", start_at="n/a"))
 
-    assert defaulted.start_at == "summer 2027"
+    assert defaulted.start_at == "Summer 2027"
     assert unavailable.start_at == "N/A"
 
 
