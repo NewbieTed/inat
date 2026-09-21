@@ -84,13 +84,20 @@ inat search "backend infrastructure role" --mode vector
 inat search "backend infrastructure role" --mode hybrid
 inat search --status interview
 inat search --season summer --year 2027
+inat search --year all
+inat search --status applied --page 2 --page-size 20
 ```
 
 `hybrid` is the default and combines text and vector ranks. If optional vector
 components are not ready, it safely returns text matches. `text` explicitly
 avoids all vector access. Search text and embeddings contain only Company and
 Position. Status, season, and year are exact filters and can be used without a
-text query; filtered-only searches never access vectors.
+text query; filtered-only searches never access vectors. Results are paginated
+without truncation using `--page` and `--page-size` (20 rows by default). Before
+matching, `inat` counts the filtered scope; scopes above 1,000 applications stop
+with the count and ask for narrower filters. Search defaults to the current
+application year (next summer's year); use `--year YYYY` to select another year
+or `--year all` to search across every year.
 
 Vector support is optional because its ML dependencies are large:
 

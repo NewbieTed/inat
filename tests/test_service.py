@@ -249,7 +249,7 @@ def test_status_and_season_filters_work_without_query_or_vectors(tmp_path):
         today=date(2027, 1, 1),
     )
 
-    by_status = tracker.search(None, status="interview")
+    by_status = tracker.search(None, status="interview", all_years=True)
     by_season = tracker.search(None, year=2027, season=Season.SUMMER)
 
     assert [match.application.position for match in by_status] == ["Research Intern"]
@@ -258,11 +258,37 @@ def test_status_and_season_filters_work_without_query_or_vectors(tmp_path):
     assert vectors.calls == 0
 
 
-def test_search_requires_query_or_filter(tmp_path):
+def test_search_without_query_defaults_to_current_application_year(tmp_path):
     tracker = service(tmp_path)
+    tracker.add(draft(), today=date(2026, 9, 20))
+    tracker.add(draft(position="Future Intern"), today=date(2027, 1, 1))
 
-    with pytest.raises(ValueError, match="company/position query"):
-        tracker.search(None)
+    matches = tracker.search(None, today=date(2026, 9, 20))
+
+    assert [match.application.position for match in matches] == [
+        "Software Engineering Intern"
+    ]
+
+
+def test_search_year_all_disables_default_year_filter(tmp_path):
+    tracker = service(tmp_path)
+    tracker.add(draft(), today=date(2026, 9, 20))
+    tracker.add(draft(position="Future Intern"), today=date(2027, 1, 1))
+
+    matches = tracker.search(None, all_years=True)
+
+    assert {match.application.application_year for match in matches} == {2027, 2028}
+
+
+def test_search_returns_all_filtered_matches_for_pagination(tmp_path):
+    tracker = service(tmp_path)
+    for index in range(25):
+        tracker.add(draft(position=f"Intern {index:02d}"))
+
+    matches = tracker.search(None, status="applied")
+
+    assert len(matches) == 25
+    assert tracker.count(status="applied") == 25
 
 
 def test_vector_and_hybrid_modes_use_vectors(tmp_path):

@@ -1,4 +1,5 @@
 import re
+import sqlite3
 
 from typer.testing import CliRunner
 
@@ -113,11 +114,91 @@ def test_search_can_filter_by_season_without_query(tmp_path):
     assert "Acme" in result.output
 
 
-def test_search_without_query_or_filter_is_rejected(tmp_path):
+def test_search_without_query_or_filter_uses_current_application_year(tmp_path):
     result = runner.invoke(app, ["search", "--db", str(tmp_path / "inat.db")])
 
+    assert result.exit_code == 0
+    assert "No matching applications found" in result.output
+
+
+def test_search_year_all_disables_current_year_default(tmp_path):
+    database = tmp_path / "inat.db"
+    added = runner.invoke(app, add_args(database))
+    application_id = re.search(r"Added ([A-Z0-9]{8})", added.output).group(1)
+    with sqlite3.connect(database) as connection:
+        connection.execute(
+            "UPDATE applications SET application_year = 2028 WHERE public_id = ?",
+            (application_id,),
+        )
+
+    default_year = runner.invoke(app, ["search", "--db", str(database)])
+    all_years = runner.invoke(
+        app, ["search", "--year", "all", "--db", str(database)]
+    )
+    explicit_year = runner.invoke(
+        app, ["search", "--year", "2028", "--db", str(database)]
+    )
+
+    assert "No matching applications found" in default_year.output
+    assert application_id in all_years.output
+    assert application_id in explicit_year.output
+
+
+def test_search_rejects_invalid_year_value(tmp_path):
+    result = runner.invoke(
+        app,
+        ["search", "--year", "recent", "--db", str(tmp_path / "inat.db")],
+    )
+
+    assert result.exit_code != 0
+    assert "four-digit year or 'all'" in result.output
+
+
+def test_search_results_are_paginated_without_result_limit(tmp_path):
+    database = tmp_path / "inat.db"
+    for index in range(25):
+        args = add_args(database)
+        args[2] = f"Intern {index:02d}"
+        args[3] = f"https://example.com/jobs/{index}"
+        assert runner.invoke(app, args).exit_code == 0
+
+    result = runner.invoke(
+        app,
+        [
+            "search",
+            "--status",
+            "applied",
+            "--page",
+            "2",
+            "--page-size",
+            "10",
+            "--db",
+            str(database),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "Page 2/3" in result.output
+    assert "25 matches" in result.output
+
+
+def test_search_stops_and_reports_overly_broad_scope(tmp_path, monkeypatch):
+    database = tmp_path / "inat.db"
+    for index in range(3):
+        args = add_args(database)
+        args[2] = f"Intern {index}"
+        args[3] = f"https://example.com/jobs/{index}"
+        assert runner.invoke(app, args).exit_code == 0
+    monkeypatch.setattr("inat.presentation.cli.MAX_SEARCH_CANDIDATES", 2)
+
+    result = runner.invoke(
+        app,
+        ["search", "Intern", "--mode", "text", "--db", str(database)],
+    )
+
     assert result.exit_code == 1
-    assert "company/position query" in result.output
+    assert "Search scope contains 3 applications" in result.output
+    assert "Refine it" in result.output
 
 
 def test_custom_status_cli_workflow(tmp_path):

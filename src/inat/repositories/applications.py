@@ -163,6 +163,31 @@ class ApplicationRepository:
         ).fetchall()
         return [self._application(row) for row in rows]
 
+    def count(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        status: str | None = None,
+        year: int | None = None,
+        season: Season | None = None,
+    ) -> int:
+        clauses: list[str] = []
+        params: list[object] = []
+        if status is not None:
+            clauses.append("status = ?")
+            params.append(status)
+        if year is not None:
+            clauses.append("application_year = ?")
+            params.append(year)
+        if season is not None:
+            clauses.append("application_season = ?")
+            params.append(season.value)
+        where = f" WHERE {' AND '.join(clauses)}" if clauses else ""
+        row = connection.execute(
+            f"SELECT count(*) FROM applications{where}", params
+        ).fetchone()
+        return int(row[0])
+
     def update_status(
         self,
         connection: sqlite3.Connection,

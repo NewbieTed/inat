@@ -221,6 +221,21 @@ class ApplicationService:
                 connection, status=canonical_status, year=year, season=season
             )
 
+    def count(
+        self,
+        *,
+        status: str | None = None,
+        year: int | None = None,
+        season: Season | None = None,
+    ) -> int:
+        with self.database.connect() as connection:
+            canonical_status = (
+                self._resolve_status(connection, status) if status is not None else None
+            )
+            return self.repository.count(
+                connection, status=canonical_status, year=year, season=season
+            )
+
     def update_status(
         self,
         application_id: str,
@@ -368,25 +383,32 @@ class ApplicationService:
         query: str | None = None,
         *,
         mode: SearchMode = SearchMode.HYBRID,
-        limit: int = 20,
+        limit: int | None = None,
         status: str | None = None,
         year: int | None = None,
         season: Season | None = None,
+        all_years: bool = False,
+        today: date | None = None,
     ) -> list[SearchMatch]:
-        if limit < 1:
+        if limit is not None and limit < 1:
             raise ValueError("Limit must be at least 1.")
         query = (query or "").strip()
-        if not query and status is None and year is None and season is None:
-            raise ValueError(
-                "Provide a company/position query or at least one status, "
-                "year, or season filter."
-            )
-        applications = self.list(status=status, year=year, season=season)
+        resolved_year = (
+            None
+            if all_years
+            else year
+            if year is not None
+            else default_application_season(today)[0]
+        )
+        applications = self.list(
+            status=status, year=resolved_year, season=season
+        )
         if not query:
-            return [
+            matches = [
                 SearchMatch(application, 100.0, "filter")
-                for application in applications[:limit]
+                for application in applications
             ]
+            return matches if limit is None else matches[:limit]
         allowed = {application.id: application for application in applications}
         text_matches = (
             self._text_matches(query, applications)
@@ -394,7 +416,10 @@ class ApplicationService:
             else []
         )
         vector_matches = (
-            self.semantic_search.search(query, limit=max(limit * 3, 20))
+            self.semantic_search.search(
+                query,
+                limit=max((limit or len(applications)) * 3, 20),
+            )
             if mode in {SearchMode.VECTOR, SearchMode.HYBRID}
             and self.semantic_search is not None
             else []
@@ -403,14 +428,15 @@ class ApplicationService:
             match for match in vector_matches if match.application_id in allowed
         ]
         if mode is SearchMode.TEXT:
-            return text_matches[:limit]
+            return text_matches if limit is None else text_matches[:limit]
         if mode is SearchMode.VECTOR:
-            return [
+            matches = [
                 SearchMatch(
                     allowed[item.application_id], item.similarity * 100, "vector"
                 )
-                for item in vector_matches[:limit]
+                for item in vector_matches
             ]
+            return matches if limit is None else matches[:limit]
 
         text_rank = {
             item.application.id: rank for rank, item in enumerate(text_matches, 1)
@@ -443,4 +469,5 @@ class ApplicationService:
                 (fusion, SearchMatch(allowed[application_id], score, reason))
             )
         ranked.sort(key=lambda item: (-item[0], -item[1].score))
-        return [item[1] for item in ranked[:limit]]
+        results = [item[1] for item in ranked]
+        return results if limit is None else results[:limit]

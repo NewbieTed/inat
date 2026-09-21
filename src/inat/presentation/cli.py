@@ -18,6 +18,7 @@ from inat.domain import (
     SearchMatch,
     SearchMode,
     Season,
+    default_application_season,
 )
 from inat.infrastructure import Database
 from inat.services import ApplicationService, VectorService, VectorUnavailableError
@@ -35,6 +36,7 @@ app.add_typer(vectors_app, name="vectors")
 app.add_typer(statuses_app, name="statuses")
 console = Console()
 APPLIED_DATE_PATTERN = re.compile(r"^\d{2}/\d{2}/\d{4}$")
+MAX_SEARCH_CANDIDATES = 1000
 
 
 def _database(path: Path | None) -> Database:
@@ -65,6 +67,20 @@ def _parse_applied_date(value: str) -> date:
         raise typer.BadParameter("Date applied must be a valid MM/DD/YYYY date.") from None
 
 
+def _parse_search_year(value: str | None) -> tuple[int | None, bool]:
+    if value is None:
+        return default_application_season()[0], False
+    cleaned = value.strip()
+    if cleaned.casefold() == "all":
+        return None, True
+    if not re.fullmatch(r"\d{4}", cleaned):
+        raise typer.BadParameter("Year must be a four-digit year or 'all'.")
+    year = int(cleaned)
+    if not 1900 <= year <= 9999:
+        raise typer.BadParameter("Year must be between 1900 and 9999.")
+    return year, False
+
+
 def _show_applications(applications: list[Application]) -> None:
     if not applications:
         console.print("No applications found.")
@@ -83,12 +99,29 @@ def _show_applications(applications: list[Application]) -> None:
     console.print(table)
 
 
-def _show_matches(matches: list[SearchMatch]) -> None:
+def _show_matches(
+    matches: list[SearchMatch], *, page: int, page_size: int
+) -> None:
     if not matches:
         console.print("No matching applications found.")
         return
-    table = Table("ID", "Company", "Position", "Status", "Match", "Score")
-    for match in matches:
+    total_pages = max(1, (len(matches) + page_size - 1) // page_size)
+    if page > total_pages:
+        raise ValueError(
+            f"Page {page} is beyond the last page ({total_pages})."
+        )
+    first = (page - 1) * page_size
+    visible = matches[first : first + page_size]
+    table = Table(
+        "ID",
+        "Company",
+        "Position",
+        "Status",
+        "Match",
+        "Score",
+        caption=f"Page {page}/{total_pages} · {len(matches)} matches",
+    )
+    for match in visible:
         table.add_row(
             match.application.id,
             match.application.company,
@@ -356,25 +389,43 @@ def search_applications(
         typer.Option(help="text avoids vectors; vector and hybrid use the vector index."),
     ] = SearchMode.HYBRID,
     status: Annotated[str | None, typer.Option(help="Filter by status.")] = None,
-    year: Annotated[int | None, typer.Option(help="Filter by application year.")] = None,
+    year: Annotated[
+        str | None,
+        typer.Option(help="Application year; defaults to current, or use 'all'."),
+    ] = None,
     season: Annotated[Season | None, typer.Option(help="Filter by application season.")] = None,
-    limit: Annotated[int, typer.Option(min=1, max=100)] = 20,
+    page: Annotated[int, typer.Option(min=1, help="Result page to display.")] = 1,
+    page_size: Annotated[
+        int,
+        typer.Option("--page-size", min=1, max=100, help="Rows per page."),
+    ] = 20,
     db: Annotated[Path | None, typer.Option(help="Database path.")] = None,
 ) -> None:
     """Search by text, vector similarity, or reciprocal-rank hybrid matching."""
     try:
-        matches = _search_service(db, mode).search(
+        year_filter, all_years = _parse_search_year(year)
+        service = _search_service(db, mode)
+        candidate_count = service.count(
+            status=status, year=year_filter, season=season
+        )
+        if candidate_count > MAX_SEARCH_CANDIDATES:
+            console.print(
+                f"[yellow]Search scope contains {candidate_count} applications. "
+                "Refine it with --status, --season, or --year.[/yellow]"
+            )
+            raise typer.Exit(1)
+        matches = service.search(
             query,
             mode=mode,
             status=status,
-            year=year,
+            year=year_filter,
             season=season,
-            limit=limit,
+            all_years=all_years,
         )
+        _show_matches(matches, page=page, page_size=page_size)
     except ValueError as exc:
         console.print(f"[red]{exc}[/red]")
         raise typer.Exit(1) from None
-    _show_matches(matches)
 
 
 @app.command("history")

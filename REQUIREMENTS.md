@@ -42,7 +42,11 @@ otherwise identical application.
   Free text and embeddings compare only Company and Position. `text` does not
   touch vector storage; `vector` performs semantic retrieval; `hybrid` combines
   text and vector ranks. Status, season, and year are optional exact filters and
-  may be used without a query; at least a query or one filter is required.
+  may be used without a query. Search defaults to the current application year;
+  `--year all` explicitly disables the year filter.
+  Search results are paginated with `--page` and `--page-size`, not truncated by
+  a result limit. The command counts its filtered scope first and refuses scopes
+  above 1,000 applications with a refinement message.
 - `vectors setup|rebuild|status` explicitly manages optional local semantic
   search resources.
 - `statuses list|add|rename|remove` manages custom statuses. The protected
