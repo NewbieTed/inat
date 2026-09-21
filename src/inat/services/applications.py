@@ -205,6 +205,17 @@ class ApplicationService:
             raise ValueError(f"Application {clean_id!r} does not exist.")
         return result
 
+    def remove(self, application_id: str) -> Application:
+        clean_id = application_id.strip().upper()
+        if len(clean_id) != ID_LENGTH:
+            raise ValueError(f"Application IDs are exactly {ID_LENGTH} characters.")
+        with self.database.transaction() as connection:
+            application = self.repository.get(connection, clean_id)
+            if application is None:
+                raise ValueError(f"Application {clean_id!r} does not exist.")
+            self.repository.delete(connection, clean_id)
+        return application
+
     def list(
         self,
         *,

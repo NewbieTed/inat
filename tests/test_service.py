@@ -112,6 +112,28 @@ def test_same_details_are_allowed_in_a_different_application_season(tmp_path):
     assert {item.application_year for item in tracker.list()} == {2027, 2028}
 
 
+def test_remove_deletes_application_and_status_history(tmp_path):
+    tracker = service(tmp_path)
+    item = tracker.add(draft())
+    tracker.update_status(item.id, "interview")
+
+    removed = tracker.remove(item.id.lower())
+
+    assert removed.id == item.id
+    assert tracker.list() == []
+    with pytest.raises(ValueError, match="does not exist"):
+        tracker.get(item.id)
+    with tracker.database.connect() as connection:
+        assert connection.execute("SELECT count(*) FROM status_history").fetchone()[0] == 0
+
+
+def test_remove_rejects_unknown_id(tmp_path):
+    tracker = service(tmp_path)
+
+    with pytest.raises(ValueError, match="does not exist"):
+        tracker.remove("ABCDEFGH")
+
+
 def test_optional_company_size_and_notes_are_blank(tmp_path):
     tracker = service(tmp_path)
 

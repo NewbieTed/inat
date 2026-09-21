@@ -7,7 +7,7 @@ from typing import Annotated
 
 import typer
 from rich.console import Console
-from rich.prompt import Prompt
+from rich.prompt import Confirm, Prompt
 from rich.table import Table
 
 from inat.adapters import EmbeddingModelError
@@ -311,6 +311,38 @@ def show_application(
     for label, value in rows:
         table.add_row(f"[bold]{label}[/bold]", value)
     console.print(table)
+
+
+@app.command("remove")
+def remove_application(
+    application_id: Annotated[str, typer.Argument(help="Eight-character application ID.")],
+    yes: Annotated[
+        bool,
+        typer.Option("--yes", "-y", help="Remove without interactive confirmation."),
+    ] = False,
+    db: Annotated[Path | None, typer.Option(help="Database path.")] = None,
+) -> None:
+    """Remove one application and its status history."""
+    service = _core_service(db)
+    try:
+        application = service.get(application_id)
+    except ValueError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(1) from None
+    if not yes and not Confirm.ask(
+        f"Remove {application.id}: {application.company} — {application.position}?",
+        default=False,
+    ):
+        raise typer.Abort()
+    try:
+        removed = service.remove(application.id)
+    except ValueError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(1) from None
+    console.print(
+        f"Removed [bold]{removed.id}[/bold]: "
+        f"{removed.company} — {removed.position}."
+    )
 
 
 @app.command("search")

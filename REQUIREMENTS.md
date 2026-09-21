@@ -36,6 +36,8 @@ otherwise identical application.
   size/type and notes.
 - `list`/`ls`, `show`, and `history` read core application data without vector
   access.
+- `remove ID` deletes one application and its status history after confirmation;
+  `--yes` supports non-interactive use.
 - `search QUERY --mode text|vector|hybrid` owns all similarity retrieval.
   `text` does not touch vector storage; `vector` performs semantic retrieval;
   `hybrid` combines text and vector ranks.

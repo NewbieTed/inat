@@ -131,6 +131,11 @@ class ApplicationRepository:
         ).fetchone()
         return self._application(row) if row is not None else None
 
+    def delete(self, connection: sqlite3.Connection, public_id: str) -> None:
+        connection.execute(
+            "DELETE FROM applications WHERE public_id = ?", (public_id,)
+        )
+
     def list(
         self,
         connection: sqlite3.Connection,

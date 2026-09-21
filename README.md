@@ -50,6 +50,8 @@ inat list
 inat update 7N8QK3RX --status interview
 inat show 7N8QK3RX
 inat history 7N8QK3RX
+inat remove 7N8QK3RX
+inat remove 7N8QK3RX --yes
 ```
 
 `add` rejects an exact duplicate when company, position, URL, application

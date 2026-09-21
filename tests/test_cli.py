@@ -142,3 +142,34 @@ def test_add_rejects_exact_duplicate_and_prints_existing_id(tmp_path):
     assert duplicate.exit_code == 1
     assert "Duplicate application" in duplicate.output
     assert application_id in duplicate.output
+
+
+def test_remove_by_id_with_yes_flag(tmp_path):
+    database = tmp_path / "inat.db"
+    added = runner.invoke(app, add_args(database))
+    application_id = re.search(r"Added ([A-Z0-9]{8})", added.output).group(1)
+
+    removed = runner.invoke(
+        app, ["remove", application_id, "--yes", "--db", str(database)]
+    )
+    listed = runner.invoke(app, ["list", "--db", str(database)])
+
+    assert removed.exit_code == 0
+    assert f"Removed {application_id}" in removed.output
+    assert "No applications found" in listed.output
+
+
+def test_remove_confirmation_can_cancel(tmp_path):
+    database = tmp_path / "inat.db"
+    added = runner.invoke(app, add_args(database))
+    application_id = re.search(r"Added ([A-Z0-9]{8})", added.output).group(1)
+
+    cancelled = runner.invoke(
+        app,
+        ["remove", application_id, "--db", str(database)],
+        input="n\n",
+    )
+    shown = runner.invoke(app, ["show", application_id, "--db", str(database)])
+
+    assert cancelled.exit_code != 0
+    assert shown.exit_code == 0
