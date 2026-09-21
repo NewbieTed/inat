@@ -8,7 +8,7 @@ from typing import Iterator
 from .sql_loader import read_sql
 
 
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 
 
 class Database:
@@ -70,6 +70,30 @@ class Database:
                 connection.executescript(
                     read_sql("migrations", "005_duplicate_guard.sql")
                 )
+                version = 5
+            if version == 5:
+                self._migrate_search_text(connection)
+                connection.executescript(
+                    read_sql("migrations", "006_company_position_search.sql")
+                )
+
+    @staticmethod
+    def _migrate_search_text(connection: sqlite3.Connection) -> None:
+        from inat.domain import normalize_search_text
+
+        rows = connection.execute(
+            "SELECT id, company, position FROM applications"
+        ).fetchall()
+        for row in rows:
+            connection.execute(
+                "UPDATE applications SET search_text = ? WHERE id = ?",
+                (
+                    normalize_search_text(
+                        f"{str(row['company'])} {str(row['position'])}"
+                    ),
+                    row["id"],
+                ),
+            )
 
     def initialize_vectors(self) -> None:
         self.initialize()

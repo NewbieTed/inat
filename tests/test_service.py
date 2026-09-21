@@ -225,6 +225,46 @@ def test_text_search_does_not_use_vectors(tmp_path):
     assert vectors.calls == 0
 
 
+def test_search_only_compares_company_and_position_text(tmp_path):
+    tracker = service(tmp_path)
+    tracker.add(
+        draft(
+            company_size_type="quantum banana collective",
+            notes="purple observatory marmalade",
+        )
+    )
+
+    assert tracker.search("quantum banana", mode=SearchMode.TEXT) == []
+    assert tracker.search("purple observatory", mode=SearchMode.TEXT) == []
+    assert tracker.search("Software Engineering", mode=SearchMode.TEXT)
+
+
+def test_status_and_season_filters_work_without_query_or_vectors(tmp_path):
+    vectors = FakeVectors()
+    tracker = service(tmp_path, vectors)
+    tracker.add(draft(), status="applied", today=date(2026, 9, 20))
+    tracker.add(
+        draft(position="Research Intern"),
+        status="interview",
+        today=date(2027, 1, 1),
+    )
+
+    by_status = tracker.search(None, status="interview")
+    by_season = tracker.search(None, year=2027, season=Season.SUMMER)
+
+    assert [match.application.position for match in by_status] == ["Research Intern"]
+    assert [match.application.company for match in by_season] == ["Acme"]
+    assert {match.reason for match in by_status + by_season} == {"filter"}
+    assert vectors.calls == 0
+
+
+def test_search_requires_query_or_filter(tmp_path):
+    tracker = service(tmp_path)
+
+    with pytest.raises(ValueError, match="company/position query"):
+        tracker.search(None)
+
+
 def test_vector_and_hybrid_modes_use_vectors(tmp_path):
     vectors = FakeVectors()
     tracker = service(tmp_path, vectors)

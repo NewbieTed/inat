@@ -38,9 +38,11 @@ otherwise identical application.
   access.
 - `remove ID` deletes one application and its status history after confirmation;
   `--yes` supports non-interactive use.
-- `search QUERY --mode text|vector|hybrid` owns all similarity retrieval.
-  `text` does not touch vector storage; `vector` performs semantic retrieval;
-  `hybrid` combines text and vector ranks.
+- `search [QUERY] --mode text|vector|hybrid` owns all similarity retrieval.
+  Free text and embeddings compare only Company and Position. `text` does not
+  touch vector storage; `vector` performs semantic retrieval; `hybrid` combines
+  text and vector ranks. Status, season, and year are optional exact filters and
+  may be used without a query; at least a query or one filter is required.
 - `vectors setup|rebuild|status` explicitly manages optional local semantic
   search resources.
 - `statuses list|add|rename|remove` manages custom statuses. The protected

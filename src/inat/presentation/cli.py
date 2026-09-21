@@ -347,7 +347,10 @@ def remove_application(
 
 @app.command("search")
 def search_applications(
-    query: Annotated[str, typer.Argument(help="Words or meaning to search for.")],
+    query: Annotated[
+        str | None,
+        typer.Argument(help="Optional company or position text."),
+    ] = None,
     mode: Annotated[
         SearchMode,
         typer.Option(help="text avoids vectors; vector and hybrid use the vector index."),

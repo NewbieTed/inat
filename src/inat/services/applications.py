@@ -70,16 +70,8 @@ class ApplicationService:
         *,
         company: str,
         position: str,
-        company_size_type: str | None,
-        notes: str | None,
     ) -> str:
-        return normalize_search_text(
-            " ".join(
-                part
-                for part in (company, position, company_size_type, notes)
-                if part
-            )
-        )
+        return normalize_search_text(f"{company} {position}")
 
     @staticmethod
     def _start_at(
@@ -150,8 +142,6 @@ class ApplicationService:
         search_text = self._search_text(
             company=company,
             position=position,
-            company_size_type=company_size_type,
-            notes=notes,
         )
         with self.database.transaction() as connection:
             canonical_status = self._resolve_status(connection, status)
@@ -255,8 +245,6 @@ class ApplicationService:
         search_text = self._search_text(
             company=current.company,
             position=current.position,
-            company_size_type=new_size,
-            notes=new_notes,
         )
         with self.database.transaction() as connection:
             canonical_status = self._resolve_status(connection, status)
@@ -347,13 +335,10 @@ class ApplicationService:
             fields = [
                 normalize_search_text(application.company),
                 normalize_search_text(application.position),
-                normalize_search_text(application.id),
             ]
             haystack = self._search_text(
                 company=application.company,
                 position=application.position,
-                company_size_type=application.company_size_type,
-                notes=application.notes,
             )
             if key in fields:
                 score = 100.0
@@ -380,7 +365,7 @@ class ApplicationService:
 
     def search(
         self,
-        query: str,
+        query: str | None = None,
         *,
         mode: SearchMode = SearchMode.HYBRID,
         limit: int = 20,
@@ -390,7 +375,18 @@ class ApplicationService:
     ) -> list[SearchMatch]:
         if limit < 1:
             raise ValueError("Limit must be at least 1.")
+        query = (query or "").strip()
+        if not query and status is None and year is None and season is None:
+            raise ValueError(
+                "Provide a company/position query or at least one status, "
+                "year, or season filter."
+            )
         applications = self.list(status=status, year=year, season=season)
+        if not query:
+            return [
+                SearchMatch(application, 100.0, "filter")
+                for application in applications[:limit]
+            ]
         allowed = {application.id: application for application in applications}
         text_matches = (
             self._text_matches(query, applications)

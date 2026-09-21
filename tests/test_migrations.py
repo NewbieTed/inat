@@ -21,7 +21,7 @@ def test_existing_database_drops_deadline_without_losing_application(tmp_path):
                 'ABCDEFGH', 'Acme', 'Intern', '2026-10-15', '2027-06-01',
                 'Handshake', '2026-09-19', 'assessment',
                 '2026-09-19T12:00:00+00:00', 'summer', 2027, NULL,
-                'https://example.com/job', NULL, 'acme intern handshake',
+                'https://example.com/job', NULL, 'acme intern handshake hidden notes',
                 '2026-09-19T12:00:00+00:00', '2026-09-19T12:00:00+00:00'
             )
             """
@@ -34,7 +34,7 @@ def test_existing_database_drops_deadline_without_losing_application(tmp_path):
             row["name"] for row in connection.execute("PRAGMA table_info(applications)")
         }
         row = connection.execute(
-            "SELECT public_id, company, status FROM applications"
+            "SELECT public_id, company, status, search_text FROM applications"
         ).fetchone()
         version = connection.execute("PRAGMA user_version").fetchone()[0]
         statuses = {
@@ -42,9 +42,9 @@ def test_existing_database_drops_deadline_without_losing_application(tmp_path):
         }
     assert "deadline" not in columns
     assert "platform" not in columns
-    assert tuple(row) == ("ABCDEFGH", "Acme", "OA")
+    assert tuple(row) == ("ABCDEFGH", "Acme", "OA", "acme intern")
     assert statuses >= {"applied", "OA", "interview", "offer", "rejected", "withdrawn"}
-    assert version == 5
+    assert version == 6
 
     with database.connect() as connection:
         with pytest.raises(sqlite3.IntegrityError, match="duplicate application"):

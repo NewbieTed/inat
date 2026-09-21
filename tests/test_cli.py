@@ -78,6 +78,48 @@ def test_default_hybrid_search_falls_back_to_text_without_vectors(tmp_path):
     assert "Acme" in result.output
 
 
+def test_search_can_filter_by_status_without_query(tmp_path):
+    database = tmp_path / "inat.db"
+    assert runner.invoke(app, add_args(database)).exit_code == 0
+
+    result = runner.invoke(
+        app,
+        ["search", "--status", "applied", "--db", str(database)],
+    )
+
+    assert result.exit_code == 0
+    assert "Acme" in result.output
+    assert "filter" in result.output
+
+
+def test_search_can_filter_by_season_without_query(tmp_path):
+    database = tmp_path / "inat.db"
+    assert runner.invoke(app, add_args(database)).exit_code == 0
+
+    result = runner.invoke(
+        app,
+        [
+            "search",
+            "--season",
+            "summer",
+            "--year",
+            "2027",
+            "--db",
+            str(database),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "Acme" in result.output
+
+
+def test_search_without_query_or_filter_is_rejected(tmp_path):
+    result = runner.invoke(app, ["search", "--db", str(tmp_path / "inat.db")])
+
+    assert result.exit_code == 1
+    assert "company/position query" in result.output
+
+
 def test_custom_status_cli_workflow(tmp_path):
     database = tmp_path / "inat.db"
     created = runner.invoke(

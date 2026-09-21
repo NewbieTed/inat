@@ -82,11 +82,15 @@ index. Add, update, list, show, and history use only the core SQLite tables.
 inat search "distributed systems" --mode text
 inat search "backend infrastructure role" --mode vector
 inat search "backend infrastructure role" --mode hybrid
+inat search --status interview
+inat search --season summer --year 2027
 ```
 
 `hybrid` is the default and combines text and vector ranks. If optional vector
 components are not ready, it safely returns text matches. `text` explicitly
-avoids all vector access.
+avoids all vector access. Search text and embeddings contain only Company and
+Position. Status, season, and year are exact filters and can be used without a
+text query; filtered-only searches never access vectors.
 
 Vector support is optional because its ML dependencies are large:
 
